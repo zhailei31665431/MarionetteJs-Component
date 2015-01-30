@@ -1,15 +1,15 @@
 var app = new Marionette.Application();
-app.module('PageView',function(PageView,Backbone,Marionette,$,_){
+JWidgets.module('PageView',function(PageView,Backbone,Marionette,$,_){
 
 })
 
-app.module('PageView.Data',function(Data,PageView,Backbone,Marionette,$,_){
+JWidgets.module('PageView.Data',function(Data,PageView,Backbone,Marionette,$,_){
 
   this.collection = Backbone.Collection.extend({})
 
 })
 
-app.module('PageView.Templates',function(Templates,PageView,Backbone,Marionette,$,_){
+JWidgets.module('PageView.Templates',function(Templates,PageView,Backbone,Marionette,$,_){
 
   Templates.normal = _.template('<div class="PageView-w">\
                     <button class="pageView-to-pre" type="button">&lsaquo;</button>\
@@ -23,11 +23,12 @@ app.module('PageView.Templates',function(Templates,PageView,Backbone,Marionette,
                     <button class="pageView-to-next" type="button">&rsaquo;</button>\
                     <button class="pageView-to-last" type="button">&raquo;</button>\
                   </div>')
+  Templates.moreTemlpate = _.template('<div class="PageView-w"><button class="pageView-to-more" type="button">加载更多</button><div class="PageView-c"></div></div>')
   Templates.PageItemView = _.template('<%=num() %>')
 
 })
 
-app.module('PageView.base',function(base,PageView,Backbone,Marionette,$,_){
+JWidgets.module('PageView.base',function(base,PageView,Backbone,Marionette,$,_){
 
   this.startWithParent = false;
 
@@ -37,7 +38,7 @@ app.module('PageView.base',function(base,PageView,Backbone,Marionette,$,_){
 
   this.PageItemView = Marionette.ItemView.extend({
     className:'PageItemView',
-    template:app.PageView.Templates.PageItemView,
+    template:JWidgets.PageView.Templates.PageItemView,
     templateHelpers:function(){
       return{
         num:function(){
@@ -57,13 +58,14 @@ app.module('PageView.base',function(base,PageView,Backbone,Marionette,$,_){
   this.CompositeView = Marionette.CompositeView.extend({
     className:'PageView',
     getTemplate:function(){
-      return app.PageView.Templates[this.templateType]
+      return JWidgets.PageView.Templates[this.templateType]
     },
     ui:{
       firstBtn:'.pageView-to-first',
       preBtn:'.pageView-to-pre',
       nextBtn:'.pageView-to-next',
-      lastBtn:'.pageView-to-last'
+      lastBtn:'.pageView-to-last',
+      moreBtn:'.pageView-to-more'
     },
     childViewContainer:'.PageView-c',
     childView:this.PageItemView,
@@ -76,7 +78,8 @@ app.module('PageView.base',function(base,PageView,Backbone,Marionette,$,_){
       'click .pageView-to-first':'goFirst',
       'click .pageView-to-pre':'goPre',
       'click .pageView-to-next':'goNext',
-      'click .pageView-to-last':'goLast'
+      'click .pageView-to-last':'goLast',
+      'click .pageView-to-more':'goNext'
     },
     initialize:function(options){
       _.extend(this,options)
@@ -84,13 +87,37 @@ app.module('PageView.base',function(base,PageView,Backbone,Marionette,$,_){
   })
   this.Controller = Marionette.Controller.extend({
     initialize:function(options){
+      console.log(options,'有东西么')
       _.extend(this,options);
-      this.start();
+      this.AllPageNum = Math.ceil(this.dataCollection.datas['num'] / parseInt(this.dataCollection.datas["pagesize"]));
+      if(this.templateType !='scroll'){
+        this.start();
+        this.bindEvt();
+      }else{
+        this._init_scroll()
+      }
+    },
+    bindEvt:function(){
+      var self = this;
+      this.dataCollection.on('fetch:success',function(){
+        self.fetching = false
+        var num =  Math.ceil(this.datas['num'] / parseInt(this.datas["pagesize"]));
+        if(self.AllPageNum != num){
+          self.AllPageNum = num
+          if(self.templateType!='scroll') self._init_pageBtn(this.datas["pageno"]);
+        }else{
+          if(self.templateType == 'moreTemlpate') self.Btns.moreBtn.html('加载更多').removeAttr('disabled')
+        }
+      })
+      this.on('goFetch',function(){
+        self.fetching = true
+        if(self.templateType == 'moreTemlpate') this.Btns.moreBtn.html('加载中…').attr({disabled:'disabled'})
+      })
     },
     start:function(){
       var self = this;
-      this.AllPageNum = Math.ceil(this.page['num'] / this.page["pagesize"]);
-      this.collection = new app.PageView.Data.collection({id:0});
+      this.collection = new JWidgets.PageView.Data.collection();
+      if(this.scrollContainr) this.scrollContainr.off('scroll')
       this.CompositeView = new base.CompositeView({
         collection: this.collection,
         templateType:this.templateType
@@ -102,21 +129,22 @@ app.module('PageView.base',function(base,PageView,Backbone,Marionette,$,_){
       }).on('goFirst',function(){
         self.collection.reset(self._init_pageBtn(0))
       }).on('goPre',function(){
-        self.collection.reset(self._init_pageBtn(self.collection.nowNum-1));
+        self.collection.reset(self._init_pageBtn(parseInt(self.collection.nowNum)-1));
       }).on('goNext',function(){
-        self.collection.reset(self._init_pageBtn(self.collection.nowNum+1));
+        self.collection.reset(self._init_pageBtn(parseInt(self.collection.nowNum)+1));
       }).on('goLast',function(){
         self.collection.reset(self._init_pageBtn(self.AllPageNum-1))
       })
       self.region.show(self.CompositeView);
+      if(this.AllPageNum - 1  == 1) self.region.$el.addClass('hide');
       this.Btns = this.CompositeView.ui;
-      this.collection.on('reset',function(){
-        //触发事件
-        self.trigger('hahah',this.nowNum);
-      })
       this.collection.reset(this._init_pageBtn(0));
+      this.collection.on('reset',function(){
+        self.trigger('goFetch',this.nowNum);
+      })
     },
     _init_pageBtn:function(num){
+      num = parseInt(num)
       this.collection.nowNum = num;
       var data = []
       if(this.templateType == 'normal'){
@@ -131,7 +159,7 @@ app.module('PageView.base',function(base,PageView,Backbone,Marionette,$,_){
           this.Btns.nextBtn.removeAttr('disabled');
         }
         return data;
-      }else{
+      }else if(this.templateType == 'numTemplate'){
         if(num == 0){
           this.Btns.firstBtn.attr({disabled:'disabled'});
           this.Btns.preBtn.attr({disabled:'disabled'});
@@ -148,14 +176,59 @@ app.module('PageView.base',function(base,PageView,Backbone,Marionette,$,_){
           this.Btns.nextBtn.removeAttr('disabled');
           this.Btns.lastBtn.removeAttr('disabled');
         }
-        var data = _.map(_.range(0,this.AllPageNum),function(item,index){
-          return {id:item,active:(index == num?true:false)}
-        })
+        if(this.AllPageNum<7){
+            data = _.map(_.range(0,(this.AllPageNum<7?this.AllPageNum:7)),function(item,index){
+              return {id:item,active:(index == num?true:false)}
+            })
+        }else{
+          var leftNums = 0;
+          var rightNums = 0;
+          if(num<3){
+            leftNums = 0;
+            rightNums = 7;
+          }else if(num>=this.AllPageNum-3){
+            leftNums = this.AllPageNum-7
+            rightNums = this.AllPageNum
+          }else{
+            leftNums = num-3;
+            rightNums = num+4
+          }
+          data = _.map(_.range(leftNums,rightNums),function(item,index){
+            return {id:item,active:(item == num?true:false)}
+          })
+        }
         return data
+      }else{
+        if(num == this.AllPageNum-1){
+          this.Btns.moreBtn.addClass('hide')
+        }else{
+          this.Btns.moreBtn.removeClass('hide');
+        }
       }
-    }
+    },
+    _init_scroll:function(){
+      var time;
+      var self = this;
+      this.scrollContainr.on("scroll",function(){
+        var clientH = document.documentElement.clientHeight || document.body.clientHeight;
+        var contentH = $(document).height();
+        var scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
+        if(clientH + scrollTop > contentH - 100){
+          clearTimeout(time)
+          time = setTimeout(function(){
+            if(self.fetching) return
+            else{
+              if(self.AllPageNum -1 == 1) return 
+              var nowNum = parseInt(self.dataCollection.datas['pageno'])
+              if(nowNum < self.AllPageNum-1) self.trigger('goFetch',nowNum+1)
+              else self.trigger('noFetch')
+            };
+          },400)
+        }
+      })
+    },
   })  
   returnPageView = function(options){
-    return new app.PageView.base.Controller(options);
+    return new JWidgets.PageView.base.Controller(options);
   }
 })
