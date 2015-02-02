@@ -87,7 +87,6 @@ JWidgets.module('PageView.base',function(base,PageView,Backbone,Marionette,$,_){
   })
   this.Controller = Marionette.Controller.extend({
     initialize:function(options){
-      console.log(options,'有东西么')
       _.extend(this,options);
       this.AllPageNum = Math.ceil(this.dataCollection.datas['num'] / parseInt(this.dataCollection.datas["pagesize"]));
       if(this.templateType !='scroll'){
@@ -125,18 +124,17 @@ JWidgets.module('PageView.base',function(base,PageView,Backbone,Marionette,$,_){
       this.CompositeView.on('changeItem',function(view,arguments){
         var num = arguments['model'].get("id");
         if(self.collection.nowNum == num) return
-        self.collection.reset(self._init_pageBtn(num))
+        self.fetchData(self._init_pageBtn(num))
       }).on('goFirst',function(){
-        self.collection.reset(self._init_pageBtn(0))
+        self.fetchData(self._init_pageBtn(0))
       }).on('goPre',function(){
-        self.collection.reset(self._init_pageBtn(parseInt(self.collection.nowNum)-1));
+        self.fetchData(self._init_pageBtn(parseInt(self.collection.nowNum)-1));
       }).on('goNext',function(){
-        self.collection.reset(self._init_pageBtn(parseInt(self.collection.nowNum)+1));
+        self.fetchData(self._init_pageBtn(parseInt(self.collection.nowNum)+1));
       }).on('goLast',function(){
-        self.collection.reset(self._init_pageBtn(self.AllPageNum-1))
+        self.fetchData(self._init_pageBtn(self.AllPageNum-1))
       })
       self.region.show(self.CompositeView);
-      if(this.AllPageNum - 1  == 1) self.region.$el.addClass('hide');
       this.Btns = this.CompositeView.ui;
       this.collection.reset(this._init_pageBtn(0));
       this.collection.on('reset',function(){
@@ -218,7 +216,6 @@ JWidgets.module('PageView.base',function(base,PageView,Backbone,Marionette,$,_){
           time = setTimeout(function(){
             if(self.fetching) return
             else{
-              if(self.AllPageNum -1 == 1) return 
               var nowNum = parseInt(self.dataCollection.datas['pageno'])
               if(nowNum < self.AllPageNum-1) self.trigger('goFetch',nowNum+1)
               else self.trigger('noFetch')
@@ -227,6 +224,12 @@ JWidgets.module('PageView.base',function(base,PageView,Backbone,Marionette,$,_){
         }
       })
     },
+    fetchData:function(num){
+      if(this.fetching) return 
+      else{
+        this.collection.reset(num)
+      }
+    }
   })  
   returnPageView = function(options){
     return new JWidgets.PageView.base.Controller(options);
