@@ -99,7 +99,7 @@ JWidgets.module('PageView.base',function(base,PageView,Backbone,Marionette,$,_){
     },
     bindEvt:function(){
       var self = this;
-      this.dataCollection.on('fetch:success',function(){
+      this.dataCollection.off('fetch:success').on('fetch:success',function(){
         self.fetching = false
         var num =  Math.ceil(this.datas['num'] / parseInt(this.datas["pagesize"]));
         if(self.AllPageNum != num){
