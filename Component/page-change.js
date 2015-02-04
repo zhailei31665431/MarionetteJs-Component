@@ -1,4 +1,5 @@
 var app = new Marionette.Application();
+
 JWidgets.module('PageView',function(PageView,Backbone,Marionette,$,_){
 
 })
@@ -23,7 +24,7 @@ JWidgets.module('PageView.Templates',function(Templates,PageView,Backbone,Marion
                     <button class="pageView-to-next" type="button">&rsaquo;</button>\
                     <button class="pageView-to-last" type="button">&raquo;</button>\
                   </div>')
-  Templates.moreTemlpate = _.template('<div class="PageView-w"><button class="pageView-to-more" type="button">加载更多</button><div class="PageView-c"></div></div>')
+  Templates.moreTemplate = _.template('<div class="PageView-w"><button class="pageView-to-more" type="button">加载更多</button><div class="PageView-c"></div></div>')
   Templates.PageItemView = _.template('<%=num() %>')
 
 })
@@ -134,7 +135,9 @@ JWidgets.module('PageView.base',function(base,PageView,Backbone,Marionette,$,_){
       }).on('goLast',function(){
         self.fetchData(self._init_pageBtn(self.AllPageNum-1))
       })
+
       self.region.show(self.CompositeView);
+
       this.Btns = this.CompositeView.ui;
       this.collection.reset(this._init_pageBtn(0));
       this.collection.on('reset',function(){
