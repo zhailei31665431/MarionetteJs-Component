@@ -312,7 +312,7 @@ function init(data){
 	JWidgets.module("report",function(report,JWidgets,Backbone,Marionette,$,_){
 		//post
 		report.fetchCollection = Backbone.Collection.extend({
-  		url:'/cmri/crossnetuser/searchuser',
+  		url:'***',
   		parse:function(data){
   			return data['data']['list']
   		}
@@ -480,7 +480,7 @@ function init(data){
 						type: "osns_n_user"
 				}
 			},
-			url:'/spms/as/as'
+			url:'****'
 		})
 		report.postController = Marionette.Controller.extend({
 			initialize:function(options){

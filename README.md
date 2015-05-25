@@ -39,6 +39,6 @@ MarionetteJs依赖Jquery、underscore、backbone,考虑到由于有的机器没�
 
 4.在线Demo
 
- [点击跳转](http://10.2.5.191/tools/gulp/src/static/comment.html)
+ [点击跳转]()
 
- http://10.2.5.191/tools/gulp/src/static/comment.html
+ 
